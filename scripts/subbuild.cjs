@@ -168,30 +168,24 @@ function createDisabledMainPage() {
 
 // 获取主页处理模式
 function getMainPageMode(settings, defaultProject) {
-  // 明确禁用主页
+  // 情况3：禁用主页 - 当disableMainPage为true时，忽略defaultProject
   if (settings.disableMainPage === true) {
-    // 有默认项目时重定向，否则显示禁用页面
-    if (defaultProject && defaultProject !== "null") {
-      return {
-        mode: MainPageMode.REDIRECT,
-        project: defaultProject
-      };
-    } else {
-      return {
-        mode: MainPageMode.DISABLED
-      };
-    }
+    return {
+      mode: MainPageMode.DISABLED
+    };
   }
   
-  // 未禁用主页且有默认项目时，创建重定向
-  if (defaultProject && defaultProject !== "null") {
+  // 情况2：使用配置文件指定的默认项目作为重定向目标
+  // 当disableMainPage为false，且defaultProject存在有效的项目值(不为null或undefined)
+  if (defaultProject && defaultProject !== "null" && defaultProject !== "undefined") {
     return {
       mode: MainPageMode.REDIRECT,
       project: defaultProject
     };
   }
   
-  // 默认使用Qwik主页
+  // 情况1：使用Qwik原生主页
+  // 当disableMainPage为false，且defaultProject的值为null或不存在
   return {
     mode: MainPageMode.USE_QWIK
   };
