@@ -1,0 +1,8 @@
+[site]
+bucket = "."
+include = ["public/**"]
+
+[build]
+command = "npm run build"
+upload.format = "directory"
+upload.dir = "dist" 

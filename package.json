@@ -8,7 +8,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "qwik build && npm run subuild",
+    "build": "qwik build && npm run subuild && npm run copy-subprojects",
     "build.client": "vite build",
     "build.preview": "vite build --ssr src/entry.preview.tsx",
     "build.types": "tsc --incremental --noEmit",
@@ -22,7 +22,8 @@
     "preview": "qwik build preview && vite preview --open",
     "start": "vite --open --mode ssr",
     "qwik": "qwik",
-    "subuild": "node scripts/subbuild.cjs"
+    "subuild": "node scripts/subbuild.cjs",
+    "copy-subprojects": "node scripts/copy-to-dist.cjs"
   },
   "devDependencies": {
     "@builder.io/qwik": "^1.13.0",
