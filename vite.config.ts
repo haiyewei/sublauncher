@@ -43,8 +43,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
               const indexPath = path.join(publicPath, 'index.html');
               
               if (fs.existsSync(publicPath) && fs.statSync(publicPath).isDirectory() && fs.existsSync(indexPath)) {
-                // 如果目录和index.html都存在，重定向到目录路径 + '/'
-                res.writeHead(302, { 'Location': `${requestPath}/` });
+                // 如果目录和index.html都存在，使用绝对路径重定向到目录路径 + '/'
+                // 注意：使用绝对路径避免无限重定向循环
+                res.writeHead(302, { 'Location': `/${requestPath.substring(1)}/` });
                 res.end();
                 return;
               }

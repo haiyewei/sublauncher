@@ -43,18 +43,35 @@ function fixAssetPathsInHtml(htmlFilePath, projectName) {
   try {
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
     
-    // 1. 修复 script 标签中的 src 属性引用
-    htmlContent = htmlContent.replace(/src=["']\//g, `src="/${projectName}/`);
+    // 确保不会重复添加项目前缀
+    const projectPathPattern = new RegExp(`^\/${projectName}\/`);
     
-    // 2. 修复 link 标签中的 href 属性引用
-    htmlContent = htmlContent.replace(/href=["']\//g, `href="/${projectName}/`);
+    // 1. 修复 script 标签中的 src 属性引用 - 只替换绝对路径但不以项目名开头的路径
+    htmlContent = htmlContent.replace(/src=["']\/(?!([^"']*\/)?assets\/)/g, (match) => {
+      return match.replace(/src=["']\//g, `src="/${projectName}/`);
+    });
     
-    // 3. 修复其他潜在的资源引用
-    htmlContent = htmlContent.replace(/content=["']\//g, `content="/${projectName}/`);
+    // 2. 修复 link 标签中的 href 属性引用 - 只替换绝对路径但不以项目名开头的路径
+    htmlContent = htmlContent.replace(/href=["']\/(?!([^"']*\/)?assets\/)/g, (match) => {
+      return match.replace(/href=["']\//g, `href="/${projectName}/`);
+    });
+    
+    // 3. 修复其他潜在的资源引用 - 只替换绝对路径但不以项目名开头的路径
+    htmlContent = htmlContent.replace(/content=["']\/(?!([^"']*\/)?assets\/)/g, (match) => {
+      return match.replace(/content=["']\//g, `content="/${projectName}/`);
+    });
     
     // 4. 避免修复已经用绝对URL开头的路径
     // 修复 URL("/path") 这样的引用（可能存在于内联CSS中）
-    htmlContent = htmlContent.replace(/url\(["']\//g, `url("/${projectName}/`);
+    htmlContent = htmlContent.replace(/url\(["']\/(?!([^"']*\/)?assets\/)/g, (match) => {
+      return match.replace(/url\(["']\//g, `url("/${projectName}/`);
+    });
+    
+    // 5. 确保所有相对路径的资源引用都是正确的
+    // 替换 src="assets/... 为 src="/projectName/assets/...
+    htmlContent = htmlContent.replace(/src=["']assets\//g, `src="/${projectName}/assets/`);
+    htmlContent = htmlContent.replace(/href=["']assets\//g, `href="/${projectName}/assets/`);
+    htmlContent = htmlContent.replace(/url\(["']assets\//g, `url("/${projectName}/assets/`);
     
     // 写回修改后的内容
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
