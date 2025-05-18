@@ -122,7 +122,7 @@ function runCommand(command, cwd, env = {}) {
 // 创建主页重定向文件
 function createMainPageRedirect(defaultProject) {
   const indexHtmlPath = path.join(publicDir, 'index.html');
-  const redirectContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta http-equiv="refresh" content="0;url=./${defaultProject}/">\n  <title>Redirecting...</title>\n</head>\n<body>\n  <p>Redirecting to <a href="./${defaultProject}/">${defaultProject}</a>...</p>\n  <script>\n    window.location.href = './${defaultProject}/';\n  </script>\n</body>\n</html>`;
+  const redirectContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta http-equiv="refresh" content="0;url=/${defaultProject}/">\n  <title>Redirecting to ${defaultProject}</title>\n</head>\n<body>\n  <p>Redirecting to <a href="/${defaultProject}/">${defaultProject}</a>...</p>\n  <script>\n    window.location.href = '/${defaultProject}/';\n  </script>\n</body>\n</html>`;
 
   fs.writeFileSync(indexHtmlPath, redirectContent);
   console.log(`Created redirect index.html to ${defaultProject}`);
