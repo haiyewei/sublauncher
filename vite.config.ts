@@ -34,6 +34,44 @@ export default defineConfig(({ command, mode }): UserConfig => {
         name: 'handle-subproject-routes',
         configureServer(server: ViteDevServer) {
           server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+            // 优先处理静态资源请求，直接通过不重定向
+            if (req.url && req.url.includes('/assets/')) {
+              const requestPath = req.url.split('?')[0]; // 移除查询参数
+              const assetPath = path.join(process.cwd(), 'public', requestPath.substring(1));
+              
+              if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+                // 设置正确的MIME类型
+                const ext = path.extname(assetPath).toLowerCase();
+                let contentType = 'application/octet-stream';
+                
+                if (ext === '.js') {
+                  contentType = 'application/javascript';
+                } else if (ext === '.css') {
+                  contentType = 'text/css';
+                } else if (ext === '.html') {
+                  contentType = 'text/html';
+                } else if (ext === '.json') {
+                  contentType = 'application/json';
+                } else if (ext === '.svg') {
+                  contentType = 'image/svg+xml';
+                } else if (['.jpg', '.jpeg'].includes(ext)) {
+                  contentType = 'image/jpeg';
+                } else if (ext === '.png') {
+                  contentType = 'image/png';
+                } else if (ext === '.gif') {
+                  contentType = 'image/gif';
+                } else if (ext === '.webp') {
+                  contentType = 'image/webp';
+                }
+                
+                // 直接提供文件，不做重定向
+                const content = fs.readFileSync(assetPath);
+                res.setHeader('Content-Type', contentType);
+                res.end(content);
+                return;
+              }
+            }
+            
             // 处理只到达目录但没有尾随斜杠的请求 (例如 /mvianav)
             if (req.url && !req.url.endsWith('/') && !req.url.includes('.')) {
               // 获取请求路径

@@ -1,2 +1,11 @@
 /*
-  Cache-Control: public, max-age=3600 
+  Cache-Control: public, max-age=3600
+
+/*.js
+  Content-Type: application/javascript
+
+/*.mjs
+  Content-Type: application/javascript
+
+/*/assets/*.js
+  Content-Type: application/javascript 

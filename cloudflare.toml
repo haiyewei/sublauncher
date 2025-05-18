@@ -1,0 +1,20 @@
+[build]
+command = "bash ./cloudflare-build.sh"
+
+[site]
+bucket = "./dist"
+
+[[headers]]
+for = "/*.js"
+[headers.values]
+Content-Type = "application/javascript"
+
+[[headers]]
+for = "/*/assets/*.js"
+[headers.values]
+Content-Type = "application/javascript"
+
+# 防止静态资源被重定向干扰
+[[routes]]
+pattern = "/*/assets/*"
+content_type_nosniff = true 

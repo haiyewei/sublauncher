@@ -45,6 +45,9 @@ function generateRedirects(projects) {
   // 为每个项目添加重定向规则
   projects.forEach(project => {
     if (project.name) {
+      // 先处理资源文件的访问，让它们直接通过，不做重定向
+      redirectsContent += `/${project.name}/assets/* /${project.name}/assets/:splat 200\n`;
+      // 其他路径使用标准重定向
       redirectsContent += `/${project.name}/* /${project.name}/:splat 200\n`;
     }
   });
