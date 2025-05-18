@@ -43,9 +43,6 @@ function fixAssetPathsInHtml(htmlFilePath, projectName) {
   try {
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
     
-    // 确保不会重复添加项目前缀
-    const projectPathPattern = new RegExp(`^\/${projectName}\/`);
-    
     // 1. 修复 script 标签中的 src 属性引用 - 只替换绝对路径但不以项目名开头的路径
     htmlContent = htmlContent.replace(/src=["']\/(?!([^"']*\/)?assets\/)/g, (match) => {
       return match.replace(/src=["']\//g, `src="/${projectName}/`);
