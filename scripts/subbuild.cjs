@@ -119,13 +119,82 @@ function runCommand(command, cwd, env = {}) {
   }
 }
 
+// 处理主页方式的枚举
+const MainPageMode = {
+  USE_QWIK: 'use_qwik',           // 使用Qwik原生主页
+  REDIRECT: 'redirect',           // 重定向到默认项目
+  DISABLED: 'disabled'            // 禁用主页
+};
+
 // 创建主页重定向文件
 function createMainPageRedirect(defaultProject) {
   const indexHtmlPath = path.join(publicDir, 'index.html');
+  
+  // 如果文件已存在，先删除
+  if (fs.existsSync(indexHtmlPath)) {
+    try {
+      fs.unlinkSync(indexHtmlPath);
+      console.log(`Removed existing index.html file.`);
+    } catch (error) {
+      console.error(`Error removing existing index.html file:`, error.message);
+    }
+  }
+  
   const redirectContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta http-equiv="refresh" content="0;url=/${defaultProject}/">\n  <title>Redirecting to ${defaultProject}</title>\n</head>\n<body>\n  <p>Redirecting to <a href="/${defaultProject}/">${defaultProject}</a>...</p>\n  <script>\n    window.location.href = '/${defaultProject}/';\n  </script>\n</body>\n</html>`;
 
   fs.writeFileSync(indexHtmlPath, redirectContent);
   console.log(`Created redirect index.html to ${defaultProject}`);
+}
+
+// 创建禁用主页的空白页面
+function createDisabledMainPage() {
+  const indexHtmlPath = path.join(publicDir, 'index.html');
+  
+  // 如果文件已存在，先删除
+  if (fs.existsSync(indexHtmlPath)) {
+    try {
+      fs.unlinkSync(indexHtmlPath);
+      console.log(`Removed existing index.html file.`);
+    } catch (error) {
+      console.error(`Error removing existing index.html file:`, error.message);
+    }
+  }
+  
+  const disabledContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>主页已禁用</title>\n  <style>\n    body {\n      font-family: sans-serif;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      height: 100vh;\n      margin: 0;\n      background-color: #f5f5f5;\n    }\n    .container {\n      text-align: center;\n      padding: 2rem;\n      background-color: white;\n      border-radius: 8px;\n      box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n    }\n    h1 {\n      color: #333;\n    }\n    p {\n      color: #666;\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>主页已禁用</h1>\n    <p>请直接访问子项目路径</p>\n  </div>\n</body>\n</html>`;
+
+  fs.writeFileSync(indexHtmlPath, disabledContent);
+  console.log(`Created disabled main page index.html`);
+}
+
+// 获取主页处理模式
+function getMainPageMode(settings, defaultProject) {
+  // 明确禁用主页
+  if (settings.disableMainPage === true) {
+    // 有默认项目时重定向，否则显示禁用页面
+    if (defaultProject && defaultProject !== "null") {
+      return {
+        mode: MainPageMode.REDIRECT,
+        project: defaultProject
+      };
+    } else {
+      return {
+        mode: MainPageMode.DISABLED
+      };
+    }
+  }
+  
+  // 未禁用主页且有默认项目时，创建重定向
+  if (defaultProject && defaultProject !== "null") {
+    return {
+      mode: MainPageMode.REDIRECT,
+      project: defaultProject
+    };
+  }
+  
+  // 默认使用Qwik主页
+  return {
+    mode: MainPageMode.USE_QWIK
+  };
 }
 
 function main() {
@@ -152,7 +221,6 @@ function main() {
 
   // 获取设置
   const settings = config.settings || {};
-  const disableMainPage = settings.disableMainPage || false;
   const defaultProject = settings.defaultProject || (config.projects[0] ? config.projects[0].name : null);
 
   // 确保 sub 目录存在
@@ -293,12 +361,27 @@ function main() {
     console.log(`you should be able to access this sub-project at: /${projectName}/`);
   }
 
-  // 如果主页被禁用且设置了默认项目，创建重定向文件
-  if (disableMainPage && defaultProject) {
-    console.log(`\nMain page is disabled. Creating redirect to default project: ${defaultProject}`);
-    createMainPageRedirect(defaultProject);
-  } else if (disableMainPage) {
-    console.warn('\nWarning: Main page is disabled but no default project is specified in settings.');
+  // 处理主页
+  const mainPageConfig = getMainPageMode(settings, defaultProject);
+  console.log('\n处理主页...');
+  
+  switch (mainPageConfig.mode) {
+    case MainPageMode.REDIRECT:
+      console.log(`主页模式: 重定向到默认项目 ${mainPageConfig.project}`);
+      createMainPageRedirect(mainPageConfig.project);
+      break;
+    case MainPageMode.DISABLED:
+      console.log('主页模式: 禁用主页');
+      createDisabledMainPage();
+      break;
+    case MainPageMode.USE_QWIK:
+      console.log('主页模式: 使用Qwik原生主页');
+      // 不做任何处理，保留原有的index.html
+      // 如果 public/index.html 不存在，则不创建
+      if (!fs.existsSync(path.join(publicDir, 'index.html'))) {
+        console.log('警告: 未找到Qwik主页文件，您可能需要运行 npm run build 来生成它');
+      }
+      break;
   }
   
   // 更新.gitignore文件，添加所有子项目目录
