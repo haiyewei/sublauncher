@@ -77,8 +77,7 @@ npm run build # or `yarn build`
 ```json
 {
   "settings": {
-    "disableMainPage": false,
-    "defaultProject": "my-first-app"
+    "disableMainPage": false
   },
   "projects": [
     {
@@ -100,8 +99,7 @@ npm run build # or `yarn build`
 **字段说明：**
 
 - **`settings` (对象):** 子项目启动器的全局设置。
-  - **`disableMainPage` (布尔值, 可选):** 如果设置为 `true`，主应用程序页面（根路径 `/`）将被禁用。此时，如果指定了 `defaultProject`，将重定向到该默认项目。默认为 `false`。
-  - **`defaultProject` (字符串, 可选):** 当 `disableMainPage` 为 `true` 时要重定向到的子项目的名称。如果未指定且 `disableMainPage` 为 `true`，脚本将尝试使用 `projects` 数组中的第一个项目。如果没有定义项目，则会发出警告。
+  - **`disableMainPage` (布尔值, 可选):** 如果设置为 `true`，主应用程序页面（根路径 `/`）将被禁用，并显示一个提示用户直接访问子项目的页面。默认为 `false`。
 - **`projects` (数组):** 一个对象数组，每个对象代表一个子项目。
   - **`name` (字符串, 必填):** 子项目的唯一名称。此名称将用于在 `/sub`（用于克隆）和 `/public`（用于提供服务）中创建目录。例如：`my-first-app`。
   - **`repoUrl` (字符串, 必填):** 子项目的 Git 仓库 URL。例如：`https://github.com/your-username/my-first-app.git`。
@@ -123,7 +121,7 @@ npm run build # or `yarn build`
     5.  将 `buildOutput` 目录的内容（例如 `/sub/项目名称/dist` 或 `/sub/项目名称/根目录/dist`）复制到 `/public/项目名称`。
     6.  修改 `/public/项目名称` 中的 `index.html`，以确保资源路径（如 `src="/assets/..."`）被正确添加项目名前缀（例如 `src="/项目名称/assets/..."`）。
   - 更新 `.gitignore` 以忽略 `/sub/` 和所有 `/public/项目名称/` 目录。
-  - 如果 `settings.disableMainPage` 为 true，则在 `/public/` 中创建一个指向 `defaultProject` 的重定向 `index.html` 文件。
+  - 如果 `settings.disableMainPage` 为 true，则在 `/public/` 中创建一个提示用户直接访问子项目的静态页面。
 
 - **`npm run build`**:
   - 运行标准的 Qwik 应用程序构建 (`qwik build`)。
