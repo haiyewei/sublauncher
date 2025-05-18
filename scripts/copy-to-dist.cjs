@@ -35,6 +35,33 @@ function copyFolderRecursiveSync(source, target) {
   });
 }
 
+// 移除资源引用中的前导斜杠（例如从src="/"改为src=""）
+function removeLeadingSlashInAssetPaths(htmlFilePath) {
+  console.log(`Removing leading slashes in asset paths in ${htmlFilePath}...`);
+  
+  try {
+    let htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
+    
+    // 1. 修复 script 标签中的 src 属性引用
+    htmlContent = htmlContent.replace(/src=["']\//g, 'src="');
+    
+    // 2. 修复 link 标签中的 href 属性引用
+    htmlContent = htmlContent.replace(/href=["']\//g, 'href="');
+    
+    // 3. 修复其他潜在的资源引用
+    htmlContent = htmlContent.replace(/content=["']\//g, 'content="');
+    
+    // 4. 修复 URL("/path") 这样的引用（可能存在于内联CSS中）
+    htmlContent = htmlContent.replace(/url\(["']\//g, 'url("');
+    
+    // 写回修改后的内容
+    fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
+    console.log(`Successfully removed leading slashes in asset paths in ${htmlFilePath}`);
+  } catch (error) {
+    console.error(`Error removing leading slashes in ${htmlFilePath}:`, error.message);
+  }
+}
+
 // 复制配置文件到dist目录
 function copyConfigFiles() {
   // 复制_headers文件
@@ -89,6 +116,15 @@ function main() {
       // 将子项目从public目录复制到dist目录
       copyFolderRecursiveSync(publicProjectPath, distProjectPath);
       console.log(`Successfully copied ${projectName} to dist directory`);
+      
+      // 处理入口文件中的资源路径
+      const indexHtmlPath = path.join(distProjectPath, 'index.html');
+      if (fs.existsSync(indexHtmlPath)) {
+        // 移除资源引用中的前导斜杠
+        removeLeadingSlashInAssetPaths(indexHtmlPath);
+      } else {
+        console.log(`No index.html found in ${distProjectPath}. Skipping asset path fixes.`);
+      }
     } else {
       console.warn(`\nWarning: Project ${projectName} not found in public directory. Skipping.`);
     }

@@ -78,6 +78,33 @@ function fixAssetPathsInHtml(htmlFilePath, projectName) {
   }
 }
 
+// 移除资源引用中的前导斜杠（例如从src="/"改为src=""）
+function removeLeadingSlashInAssetPaths(htmlFilePath) {
+  console.log(`Removing leading slashes in asset paths in ${htmlFilePath}...`);
+  
+  try {
+    let htmlContent = fs.readFileSync(htmlFilePath, 'utf-8');
+    
+    // 1. 修复 script 标签中的 src 属性引用
+    htmlContent = htmlContent.replace(/src=["']\//g, 'src="');
+    
+    // 2. 修复 link 标签中的 href 属性引用
+    htmlContent = htmlContent.replace(/href=["']\//g, 'href="');
+    
+    // 3. 修复其他潜在的资源引用
+    htmlContent = htmlContent.replace(/content=["']\//g, 'content="');
+    
+    // 4. 修复 URL("/path") 这样的引用（可能存在于内联CSS中）
+    htmlContent = htmlContent.replace(/url\(["']\//g, 'url("');
+    
+    // 写回修改后的内容
+    fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
+    console.log(`Successfully removed leading slashes in asset paths in ${htmlFilePath}`);
+  } catch (error) {
+    console.error(`Error removing leading slashes in ${htmlFilePath}:`, error.message);
+  }
+}
+
 // 更新.gitignore文件，添加子项目的public目录
 function updateGitignore(projectNames) {
   console.log('Updating .gitignore file with sub-project public directories...');
@@ -136,28 +163,8 @@ function runCommand(command, cwd, env = {}) {
 // 处理主页方式的枚举
 const MainPageMode = {
   USE_QWIK: 'use_qwik',           // 使用Qwik原生主页
-  DISABLED: 'disabled'            // 禁用主页
+  DISABLED: 'disabled'            // 禁用主页 (由Qwik路由处理，通常为404)
 };
-
-// 创建禁用主页的空白页面
-function createDisabledMainPage() {
-  const indexHtmlPath = path.join(publicDir, 'index.html');
-  
-  // 如果文件已存在，先删除
-  if (fs.existsSync(indexHtmlPath)) {
-    try {
-      fs.unlinkSync(indexHtmlPath);
-      console.log(`Removed existing index.html file.`);
-    } catch (error) {
-      console.error(`Error removing existing index.html file:`, error.message);
-    }
-  }
-  
-  const disabledContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <title>主页已禁用</title>\n  <style>\n    body {\n      font-family: sans-serif;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      height: 100vh;\n      margin: 0;\n      background-color: #f5f5f5;\n    }\n    .container {\n      text-align: center;\n      padding: 2rem;\n      background-color: white;\n      border-radius: 8px;\n      box-shadow: 0 2px 10px rgba(0,0,0,0.1);\n    }\n    h1 {\n      color: #333;\n    }\n    p {\n      color: #666;\n    }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>主页已禁用</h1>\n    <p>请直接访问子项目路径</p>\n  </div>\n</body>\n</html>`;
-
-  fs.writeFileSync(indexHtmlPath, disabledContent);
-  console.log(`Created disabled main page index.html`);
-}
 
 // 获取主页处理模式
 function getMainPageMode(settings) {
@@ -319,6 +326,9 @@ function main() {
           const indexHtmlPath = path.join(publicProjectPath, 'index.html');
           if (fs.existsSync(indexHtmlPath)) {
             fixAssetPathsInHtml(indexHtmlPath, projectName);
+            
+            // 新增步骤：移除资源引用中的前导斜杠
+            removeLeadingSlashInAssetPaths(indexHtmlPath);
           } else {
             console.log(`No index.html found in ${publicProjectPath}. Skipping asset path fixes.`);
           }
@@ -341,17 +351,30 @@ function main() {
   const mainPageConfig = getMainPageMode(settings);
   console.log('\n处理主页...');
   
+  const mainIndexHtmlPath = path.join(publicDir, 'index.html');
+
   switch (mainPageConfig.mode) {
     case MainPageMode.DISABLED:
-      console.log('主页模式: 禁用主页');
-      createDisabledMainPage();
+      console.log('主页模式: 禁用主页 (根路径将由Qwik路由处理，通常为404页面)');
+      // 删除 public/index.html 以便 Qwik 接管根路径处理 (通常显示404)
+      if (fs.existsSync(mainIndexHtmlPath)) {
+        try {
+          fs.unlinkSync(mainIndexHtmlPath);
+          console.log(`已删除 ${mainIndexHtmlPath}，以允许Qwik处理根路径。`);
+        } catch (error) {
+          console.error(`删除 ${mainIndexHtmlPath} 时出错:`, error.message);
+        }
+      } else {
+        console.log(`${mainIndexHtmlPath} 不存在。Qwik将处理根路径。`);
+      }
       break;
     case MainPageMode.USE_QWIK:
       console.log('主页模式: 使用Qwik原生主页');
-      // 不做任何处理，保留原有的index.html
-      // 如果 public/index.html 不存在，则不创建
-      if (!fs.existsSync(path.join(publicDir, 'index.html'))) {
-        console.log('警告: 未找到Qwik主页文件，您可能需要运行 npm run build 来生成它');
+      // 假设 Qwik 的主构建过程 (例如 npm run build 中的 qwik build)
+      // 已经从 src/routes/index.tsx 生成了 public/index.html。
+      // 此脚本不应干扰。
+      if (!fs.existsSync(mainIndexHtmlPath)) {
+        console.log(`警告: Qwik 主页文件 (${mainIndexHtmlPath}) 未找到。请确保 \`npm run build\` 已正确生成主 Qwik 应用。`);
       }
       break;
   }
