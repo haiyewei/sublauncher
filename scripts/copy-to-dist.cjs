@@ -36,28 +36,6 @@ function copyFolderRecursiveSync(source, target) {
   });
 }
 
-// 生成_redirects文件
-function generateRedirects(projects) {
-  console.log('Generating _redirects file from projects configuration...');
-  
-  let redirectsContent = '';
-  
-  // 为每个项目添加重定向规则
-  projects.forEach(project => {
-    if (project.name) {
-      // 先处理资源文件的访问，让它们直接通过，不做重定向
-      redirectsContent += `/${project.name}/assets/* /${project.name}/assets/:splat 200\n`;
-      // 其他路径使用标准重定向
-      redirectsContent += `/${project.name}/* /${project.name}/:splat 200\n`;
-    }
-  });
-  
-  // 写入_redirects文件
-  fs.writeFileSync(redirectsFile, redirectsContent);
-  console.log('Generated _redirects file with the following content:');
-  console.log(redirectsContent);
-}
-
 // 复制配置文件到dist目录
 function copyConfigFiles() {
   // 复制_headers文件
@@ -94,9 +72,6 @@ function main() {
     console.log(`No projects found in ${subprojectsConfigFile} or the file format is invalid.`);
     return;
   }
-
-  // 首先生成_redirects文件
-  generateRedirects(config.projects);
 
   // 处理每个项目
   for (const project of config.projects) {

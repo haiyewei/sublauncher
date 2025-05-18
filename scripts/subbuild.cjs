@@ -7,6 +7,7 @@ const subDir = path.join(rootDir, 'sub'); // 子项目目录，用于克隆和�
 const publicDir = path.join(rootDir, 'public'); // 最终静态文件目录
 const subprojectsConfigFile = path.join(rootDir, 'subprojects.json');
 const gitignoreFile = path.join(rootDir, '.gitignore');
+const redirectsFile = path.join(rootDir, '_redirects');
 
 // 递归复制文件夹及其内容
 function copyFolderRecursiveSync(source, target) {
@@ -154,7 +155,35 @@ function createMainPageRedirect(defaultProject) {
     }
   }
   
-  const redirectContent = `<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="UTF-8">\n  <meta http-equiv="refresh" content="0;url=/${defaultProject}/">\n  <title>Redirecting to ${defaultProject}</title>\n</head>\n<body>\n  <p>Redirecting to <a href="/${defaultProject}/">${defaultProject}</a>...</p>\n  <script>\n    window.location.href = '/${defaultProject}/';\n  </script>\n</body>\n</html>`;
+  // 使用服务端重定向而不是客户端JavaScript重定向
+  // 这样可以避免模块加载问题
+  const redirectContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0;url=/${defaultProject}/">
+  <title>Redirecting to ${defaultProject}</title>
+  <script>
+    // 确保重定向后的页面能正确加载模块
+    window.addEventListener('DOMContentLoaded', function() {
+      // 获取当前URL的路径部分
+      const path = window.location.pathname;
+      // 如果已经在子项目页面，不执行重定向
+      if (path.startsWith('/${defaultProject}/')) {
+        // 阻止meta refresh重定向
+        const meta = document.querySelector('meta[http-equiv="refresh"]');
+        if (meta) meta.remove();
+      } else {
+        // 使用完整的URL进行重定向，避免相对路径问题
+        window.location.href = window.location.origin + '/${defaultProject}/';
+      }
+    });
+  </script>
+</head>
+<body>
+  <p>Redirecting to <a href="/${defaultProject}/">${defaultProject}</a>...</p>
+</body>
+</html>`;
 
   fs.writeFileSync(indexHtmlPath, redirectContent);
   console.log(`Created redirect index.html to ${defaultProject}`);
@@ -203,6 +232,31 @@ function getMainPageMode(settings, defaultProject) {
   return {
     mode: MainPageMode.USE_QWIK
   };
+}
+
+// 生成_redirects文件
+function generateRedirects(projects) {
+  console.log('Generating _redirects file from projects configuration...');
+  
+  let redirectsContent = '';
+  
+  // 为每个项目添加重定向规则
+  projects.forEach(project => {
+    if (project.name) {
+      // 确保静态资源直接通过，不做重定向处理
+      redirectsContent += `/${project.name}/assets/* /${project.name}/assets/:splat 200\n`;
+      // 同样要保证JavaScript文件不会被重定向干扰
+      redirectsContent += `/${project.name}/*.js /${project.name}/:splat 200\n`;
+      redirectsContent += `/${project.name}/*.css /${project.name}/:splat 200\n`;
+      // 其他路径使用标准重定向
+      redirectsContent += `/${project.name}/* /${project.name}/:splat 200\n`;
+    }
+  });
+  
+  // 写入_redirects文件
+  fs.writeFileSync(redirectsFile, redirectsContent);
+  console.log('Generated _redirects file with the following content:');
+  console.log(redirectsContent);
 }
 
 function main() {
@@ -394,6 +448,9 @@ function main() {
   
   // 更新.gitignore文件，添加所有子项目目录
   updateGitignore(processedProjects);
+
+  // 生成_redirects文件
+  generateRedirects(config.projects);
 
   console.log('\nAll specified sub-projects processed from subprojects.json.');
   console.log('Static files have been placed in the public directory.');
