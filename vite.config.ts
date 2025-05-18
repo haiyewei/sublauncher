@@ -7,6 +7,10 @@ import { qwikVite } from "@builder.io/qwik/optimizer";
 import { qwikCity } from "@builder.io/qwik-city/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import pkg from "./package.json";
+import * as fs from 'fs';
+import * as path from 'path';
+import type { ViteDevServer } from 'vite';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 type PkgDep = Record<string, string>;
 const { dependencies = {}, devDependencies = {} } = pkg as any as {
@@ -21,7 +25,56 @@ errorOnDuplicatesPkgDeps(devDependencies, dependencies);
  */
 export default defineConfig(({ command, mode }): UserConfig => {
   return {
-    plugins: [qwikCity(), qwikVite(), tsconfigPaths()],
+    plugins: [
+      qwikCity(),
+      qwikVite(),
+      tsconfigPaths(),
+      // 添加自定义插件来处理子项目路由
+      {
+        name: 'handle-subproject-routes',
+        configureServer(server: ViteDevServer) {
+          server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
+            // 处理只到达目录但没有尾随斜杠的请求 (例如 /mvianav)
+            if (req.url && !req.url.endsWith('/') && !req.url.includes('.')) {
+              // 获取请求路径
+              const requestPath = req.url.split('?')[0]; // 移除查询参数
+              // 查看 public/requestPath/index.html 是否存在
+              const publicPath = path.join(process.cwd(), 'public', requestPath.substring(1));
+              const indexPath = path.join(publicPath, 'index.html');
+              
+              if (fs.existsSync(publicPath) && fs.statSync(publicPath).isDirectory() && fs.existsSync(indexPath)) {
+                // 如果目录和index.html都存在，重定向到目录路径 + '/'
+                res.writeHead(302, { 'Location': `${requestPath}/` });
+                res.end();
+                return;
+              }
+            }
+            
+            // 处理目录请求 (例如 /mvianav/)
+            if (req.url && req.url.endsWith('/')) {
+              const requestPath = req.url.split('?')[0]; // 移除查询参数
+              // 查看对应的index.html是否存在
+              const indexPath = path.join(
+                process.cwd(), 
+                'public', 
+                requestPath.substring(1), 
+                'index.html'
+              );
+              
+              if (fs.existsSync(indexPath)) {
+                // 直接发送index.html文件内容
+                const content = fs.readFileSync(indexPath);
+                res.setHeader('Content-Type', 'text/html');
+                res.end(content);
+                return;
+              }
+            }
+            
+            next();
+          });
+        }
+      }
+    ],
     // This tells Vite which dependencies to pre-build in dev mode.
     optimizeDeps: {
       // Put problematic deps that break bundling here, mostly those with binaries.

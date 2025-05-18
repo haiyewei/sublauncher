@@ -3,6 +3,7 @@
 /lib
 /lib-types
 /server
+/sub
 
 # Development
 node_modules
@@ -40,3 +41,7 @@ lerna-debug.log*
 # Yarn
 .yarn/*
 !.yarn/releases
+
+# Sub projects (auto-generated)
+/public/mvianav/
+/public/unlock-music/

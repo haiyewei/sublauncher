@@ -1,0 +1,20 @@
+{
+  "settings": {
+    "disableMainPage": true,
+    "defaultProject": "mvianav"
+  },
+  "projects": [
+    {
+      "name": "mvianav",
+      "repoUrl": "https://github.com/haiyewei/Mvianav.git",
+      "buildOutput": "dist",
+      "commitHash": "6fec9774f650b119cbb6ffa87d96fc47fda4fc9f"
+    },
+
+    {
+      "name": "unlock-music",
+      "repoUrl": "https://git.unlock-music.dev/um/web.git",
+      "buildOutput": "dist"
+    }
+  ]
+}
