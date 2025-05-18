@@ -5,7 +5,6 @@ const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const distDir = path.join(rootDir, 'dist');
 const subprojectsConfigFile = path.join(rootDir, 'subprojects.json');
-const redirectsFile = path.join(rootDir, '_redirects');
 const headersFile = path.join(rootDir, '_headers');
 
 // 递归复制文件夹及其内容
@@ -42,12 +41,6 @@ function copyConfigFiles() {
   if (fs.existsSync(headersFile)) {
     fs.copyFileSync(headersFile, path.join(distDir, '_headers'));
     console.log('Copied _headers to dist directory');
-  }
-
-  // 复制_redirects文件
-  if (fs.existsSync(redirectsFile)) {
-    fs.copyFileSync(redirectsFile, path.join(distDir, '_redirects'));
-    console.log('Copied _redirects to dist directory');
   }
 }
 

@@ -7,7 +7,6 @@ const subDir = path.join(rootDir, 'sub'); // 子项目目录，用于克隆和�
 const publicDir = path.join(rootDir, 'public'); // 最终静态文件目录
 const subprojectsConfigFile = path.join(rootDir, 'subprojects.json');
 const gitignoreFile = path.join(rootDir, '.gitignore');
-const redirectsFile = path.join(rootDir, '_redirects');
 
 // 递归复制文件夹及其内容
 function copyFolderRecursiveSync(source, target) {
@@ -137,57 +136,8 @@ function runCommand(command, cwd, env = {}) {
 // 处理主页方式的枚举
 const MainPageMode = {
   USE_QWIK: 'use_qwik',           // 使用Qwik原生主页
-  REDIRECT: 'redirect',           // 重定向到默认项目
   DISABLED: 'disabled'            // 禁用主页
 };
-
-// 创建主页重定向文件
-function createMainPageRedirect(defaultProject) {
-  const indexHtmlPath = path.join(publicDir, 'index.html');
-  
-  // 如果文件已存在，先删除
-  if (fs.existsSync(indexHtmlPath)) {
-    try {
-      fs.unlinkSync(indexHtmlPath);
-      console.log(`Removed existing index.html file.`);
-    } catch (error) {
-      console.error(`Error removing existing index.html file:`, error.message);
-    }
-  }
-  
-  // 使用服务端重定向而不是客户端JavaScript重定向
-  // 这样可以避免模块加载问题
-  const redirectContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=/${defaultProject}/">
-  <title>Redirecting to ${defaultProject}</title>
-  <script>
-    // 确保重定向后的页面能正确加载模块
-    window.addEventListener('DOMContentLoaded', function() {
-      // 获取当前URL的路径部分
-      const path = window.location.pathname;
-      // 如果已经在子项目页面，不执行重定向
-      if (path.startsWith('/${defaultProject}/')) {
-        // 阻止meta refresh重定向
-        const meta = document.querySelector('meta[http-equiv="refresh"]');
-        if (meta) meta.remove();
-      } else {
-        // 使用完整的URL进行重定向，避免相对路径问题
-        window.location.href = window.location.origin + '/${defaultProject}/';
-      }
-    });
-  </script>
-</head>
-<body>
-  <p>Redirecting to <a href="/${defaultProject}/">${defaultProject}</a>...</p>
-</body>
-</html>`;
-
-  fs.writeFileSync(indexHtmlPath, redirectContent);
-  console.log(`Created redirect index.html to ${defaultProject}`);
-}
 
 // 创建禁用主页的空白页面
 function createDisabledMainPage() {
@@ -210,53 +160,18 @@ function createDisabledMainPage() {
 }
 
 // 获取主页处理模式
-function getMainPageMode(settings, defaultProject) {
-  // 情况3：禁用主页 - 当disableMainPage为true时，忽略defaultProject
+function getMainPageMode(settings) {
+  // 情况2：禁用主页 - 当disableMainPage为true
   if (settings.disableMainPage === true) {
     return {
       mode: MainPageMode.DISABLED
     };
   }
   
-  // 情况2：使用配置文件指定的默认项目作为重定向目标
-  // 当disableMainPage为false，且defaultProject存在有效的项目值(不为null或undefined)
-  if (defaultProject && defaultProject !== "null" && defaultProject !== "undefined") {
-    return {
-      mode: MainPageMode.REDIRECT,
-      project: defaultProject
-    };
-  }
-  
   // 情况1：使用Qwik原生主页
-  // 当disableMainPage为false，且defaultProject的值为null或不存在
   return {
     mode: MainPageMode.USE_QWIK
   };
-}
-
-// 生成_redirects文件
-function generateRedirects(projects) {
-  console.log('Generating _redirects file from projects configuration...');
-  
-  let redirectsContent = '';
-  
-  // 为每个项目添加重定向规则
-  projects.forEach(project => {
-    if (project.name) {
-      // 确保静态资源直接通过，不做重定向处理
-      redirectsContent += `/${project.name}/assets/* /${project.name}/assets/:splat 200\n`;
-      // 同样要保证JavaScript文件不会被重定向干扰
-      redirectsContent += `/${project.name}/*.js /${project.name}/:splat 200\n`;
-      redirectsContent += `/${project.name}/*.css /${project.name}/:splat 200\n`;
-      // 其他路径使用标准重定向
-      redirectsContent += `/${project.name}/* /${project.name}/:splat 200\n`;
-    }
-  });
-  
-  // 写入_redirects文件
-  fs.writeFileSync(redirectsFile, redirectsContent);
-  console.log('Generated _redirects file with the following content:');
-  console.log(redirectsContent);
 }
 
 function main() {
@@ -283,7 +198,6 @@ function main() {
 
   // 获取设置
   const settings = config.settings || {};
-  const defaultProject = settings.defaultProject || (config.projects[0] ? config.projects[0].name : null);
 
   // 确保 sub 目录存在
   if (!fs.existsSync(subDir)) {
@@ -424,14 +338,10 @@ function main() {
   }
 
   // 处理主页
-  const mainPageConfig = getMainPageMode(settings, defaultProject);
+  const mainPageConfig = getMainPageMode(settings);
   console.log('\n处理主页...');
   
   switch (mainPageConfig.mode) {
-    case MainPageMode.REDIRECT:
-      console.log(`主页模式: 重定向到默认项目 ${mainPageConfig.project}`);
-      createMainPageRedirect(mainPageConfig.project);
-      break;
     case MainPageMode.DISABLED:
       console.log('主页模式: 禁用主页');
       createDisabledMainPage();
@@ -448,9 +358,6 @@ function main() {
   
   // 更新.gitignore文件，添加所有子项目目录
   updateGitignore(processedProjects);
-
-  // 生成_redirects文件
-  generateRedirects(config.projects);
 
   console.log('\nAll specified sub-projects processed from subprojects.json.');
   console.log('Static files have been placed in the public directory.');
