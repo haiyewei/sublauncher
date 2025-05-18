@@ -1,6 +1,7 @@
 {
   "settings": {
-    "disableMainPage": true
+    "disableMainPage": false,
+    "defaultProject": "mvianav"
   },
   "projects": [
     {
