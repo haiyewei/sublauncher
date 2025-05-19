@@ -15,6 +15,11 @@
       "name": "unlock-music",
       "repoUrl": "https://git.unlock-music.dev/um/web.git",
       "buildOutput": "dist"
+    },
+    {
+      "name": "collector",
+      "repoUrl": "https://github.com/haiyewei/collector.git",
+      "buildOutput": "dist"
     }
   ]
 }
