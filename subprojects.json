@@ -19,7 +19,7 @@
     {
       "name": "collector",
       "repoUrl": "https://github.com/haiyewei/collector.git",
-      "buildOutput": "dist"
+      "buildOutput": "build"
     }
   ]
 }
