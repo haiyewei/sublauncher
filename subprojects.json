@@ -20,6 +20,12 @@
       "name": "collector",
       "repoUrl": "https://github.com/haiyewei/collector.git",
       "buildOutput": "build"
+    },
+    {
+      "name": "ariang",
+      "repoUrl": "https://github.com/haiyewei/AriaNg.git",
+      "buildOutput": "dist",
+      "commitHash": "ee48603a27a4b08b604fef93a6c8ee9242f20d1e"
     }
   ]
 }
