@@ -26,6 +26,12 @@
       "repoUrl": "https://github.com/haiyewei/AriaNg.git",
       "buildOutput": "dist",
       "commitHash": "2d74aeb99d2b8ece5759953607471aefd3aeacc4"
+    },
+    {
+      "name": "foyue",
+      "repoUrl": "https://github.com/haiyewei/foyue.git",
+      "buildOutput": "dist",
+      "commitHash": "621a4a491ba4f69fe65cd935e07f09cb10808139"
     }
   ]
 }
